@@ -1,0 +1,8 @@
+<launch>
+    <node name="ArUcoMarkerPose" pkg="marker_localisation" type="ArUcoMarkerPoseNode.py" output="screen">
+        <param name="camera_image_topic" value="/rgb/image_rect_color"/>
+        <param name="camera_info_topic" value="/rgb/camera_info" />
+        <param name="marker_size" value="0.1" />
+        <param name="dictionary" value="original" />
+    </node>
+</launch>
