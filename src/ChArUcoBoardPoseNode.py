@@ -22,6 +22,7 @@ class ChArUcoBoardNode(object):
         self._tf_listener = TransformListener()
         self._cv_bridge = CvBridge()
         self._publish_tf = rospy.get_param("~publish_tf", default=True)
+        self._flip_image = rospy.get_param("~horizontal_flip", default=False)
 
         rospy.loginfo("Waiting for camera info messages")
         self.camera = image_geometry.PinholeCameraModel()
@@ -31,7 +32,6 @@ class ChArUcoBoardNode(object):
         rospy.loginfo("...Received")
 
         _required_dict = rospy.get_param("~dictionary", default="original").lower()
-        _allowed_dicts = ["ORIGINAL", "4x4", "5x5", "6x6"]
 
         if _required_dict == "original":
             self._dict = aruco.Dictionary_get(aruco.DICT_ARUCO_ORIGINAL)
@@ -42,14 +42,15 @@ class ChArUcoBoardNode(object):
         elif _required_dict == "6x6":
             self._dict = aruco.Dictionary_get(aruco.DICT_6X6_50)
         else:
-            raise ValueError("Required CHARUCO dictionary not available. Available ones are: {}".format(_allowed_dicts))
+            raise ValueError("Required CHARUCO dictionary not available. Available ones are: {}".format(
+                ["ORIGINAL", "4x4", "5x5", "6x6"]))
 
         default_config = {
             'name': 'board1',
             'columns': 3,
             'rows': 3,
-            'square_size': 0.0551,
-            'marker_size': 0.0412
+            'square_size': 0.05,
+            'marker_size': 0.0395
         }
 
         self._board_config = rospy.get_param("~board_configuration", default=default_config)
@@ -70,6 +71,7 @@ class ChArUcoBoardNode(object):
         frame = self._cv_bridge.imgmsg_to_cv2(cam_img)
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.flip(gray, 1) if self._flip_image else gray
 
         # identify markers and
         corners, ids, rejected_img_points = aruco.detectMarkers(gray, self._dict)
@@ -79,11 +81,10 @@ class ChArUcoBoardNode(object):
             # if there are enough corners to get a reasonable result
             if ret > 3:
                 retval, rvec, tvec = aruco.estimatePoseCharucoBoard(ch_corners, ch_ids, self._board, self.camera.K,
-                                                                    self.camera.D)
+                                                                    self.camera.D, rvec=None, tvec=None)
 
                 # if a pose could be estimated
                 if retval:
-
                     angle = np.linalg.norm(rvec)
                     axis = rvec.flatten() / angle
 
