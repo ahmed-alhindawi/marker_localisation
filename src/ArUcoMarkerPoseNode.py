@@ -44,12 +44,11 @@ class ArUcoBoardNode(object):
 
         rospy.loginfo("Waiting for camera info messages")
         self.camera = image_geometry.PinholeCameraModel()
-        cam_info_msg = rospy.wait_for_message(
-            rospy.get_param("~camera_info_topic", "camera_info"), CameraInfo, timeout=None)
+        cam_info_msg = rospy.wait_for_message("/camera_info", CameraInfo, timeout=None)
         self.camera.fromCameraInfo(cam_info_msg)
         rospy.loginfo("...Received")
 
-        rospy.Subscriber(rospy.get_param("~camera_image_topic", default="/image"), Image, self.publish_marker_transform)
+        rospy.Subscriber("/image", Image, self.publish_marker_transform)
         self._marker_pub = rospy.Publisher("/tags", MarkerTagDetectionArray, queue_size=10)
 
     def publish_marker_transform(self, cam_img):
@@ -106,12 +105,6 @@ class ArUcoBoardNode(object):
                                                        time=cam_img.header.stamp,
                                                        child="ar_marker_{}".format(marker_id[0]),
                                                        parent=cam_img.header.frame_id)
-
-                # # just while we're here, lets view it
-                # pts = np.array(corners).astype(np.int32).reshape((-1, 1, 2))
-                # cv2.polylines(frame, [pts], True, (0, 255, 255))
-                # cv2.imshow("marker", frame)
-                # cv2.waitKey(1)
 
             mtda = MarkerTagDetectionArray()
             mtda.detections = tags

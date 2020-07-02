@@ -22,7 +22,6 @@ class ChArUcoBoardNode(object):
         self._tf_listener = TransformListener()
         self._cv_bridge = CvBridge()
         self._publish_tf = rospy.get_param("~publish_tf", default=True)
-        self._flip_image = rospy.get_param("~horizontal_flip", default=False)
 
         rospy.loginfo("Waiting for camera info messages")
         self.camera = image_geometry.PinholeCameraModel()
@@ -71,7 +70,6 @@ class ChArUcoBoardNode(object):
         frame = self._cv_bridge.imgmsg_to_cv2(cam_img)
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray = cv2.flip(gray, 1) if self._flip_image else gray
 
         # identify markers and
         corners, ids, rejected_img_points = aruco.detectMarkers(gray, self._dict)
