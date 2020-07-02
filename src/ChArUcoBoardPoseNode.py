@@ -2,18 +2,17 @@
 
 from __future__ import print_function
 
-import rospy
-from tf import TransformListener, TransformBroadcaster
-from tf import transformations
-import cv2.aruco as aruco
 import cv2
-from cv_bridge import CvBridge
+import cv2.aruco as aruco
 import image_geometry
 import numpy as np
-
-from sensor_msgs.msg import Image, CameraInfo
+import rospy
+from cv_bridge import CvBridge
 from geometry_msgs.msg import Point, PoseStamped, Quaternion
 from marker_localisation.msg import MarkerTagDetection
+from sensor_msgs.msg import Image, CameraInfo
+from tf import TransformListener, TransformBroadcaster
+from tf import transformations
 
 
 class ChArUcoBoardNode(object):
@@ -118,7 +117,8 @@ class ChArUcoBoardNode(object):
                     if self._publish_tf:
                         self._tf_broadcaster.sendTransform(translation=tvec,
                                                            rotation=quaternion,
-                                                           time=cam_img.header.stamp,
+                                                           time=rospy.Time(cam_img.header.stamp.secs,
+                                                                           cam_img.header.stamp.nsecs),
                                                            child=self._board_config["name"],
                                                            parent=cam_img.header.frame_id)
 

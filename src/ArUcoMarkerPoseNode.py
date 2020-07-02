@@ -102,7 +102,7 @@ class ArUcoBoardNode(object):
                 if self._publish_tf:
                     self._tf_broadcaster.sendTransform(translation=trans,
                                                        rotation=quaternion,
-                                                       time=cam_img.header.stamp,
+                                                       time=rospy.Time(cam_img.header.stamp.secs, cam_img.header.stamp.nsecs),
                                                        child="ar_marker_{}".format(marker_id[0]),
                                                        parent=cam_img.header.frame_id)
 
