@@ -24,8 +24,7 @@ class ChArUcoBoardNode(object):
 
         rospy.loginfo("Waiting for camera info messages")
         self.camera = image_geometry.PinholeCameraModel()
-        cam_info_msg = rospy.wait_for_message(
-            rospy.get_param("~camera_info_topic", "/camera_info"), CameraInfo, timeout=None)
+        cam_info_msg = rospy.wait_for_message("/camera_info", CameraInfo, timeout=None)
         self.camera.fromCameraInfo(cam_info_msg)
         rospy.loginfo("...Received")
 
@@ -62,7 +61,7 @@ class ChArUcoBoardNode(object):
                                                 self._board_config['marker_size'],
                                                 self._dict)
 
-        rospy.Subscriber(rospy.get_param("~camera_image_topic", default="/image"), Image, self.publish_marker_transform)
+        rospy.Subscriber("/image", Image, self.publish_marker_transform)
         self._marker_pub = rospy.Publisher("/tags", MarkerTagDetection, queue_size=10)
 
     def publish_marker_transform(self, cam_img):

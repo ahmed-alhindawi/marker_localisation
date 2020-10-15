@@ -1,7 +1,7 @@
 <launch>
     <node name="ChArUcoBoardPose" pkg="marker_localisation" type="ChArUcoBoardPoseNode.py" output="screen">
-        <param name="camera_image_topic" value="/rgb/image_rect_color"/>
-        <param name="camera_info_topic" value="/rgb/camera_info" />
+        <remap from="/image" to="/rgb/image_rect_color"/>
+        <remap from="/camera_info" to="/rgb/camera_info" />
         <param name="dictionary" value="original" />
         <param name="publish_tf" value="True" />
         <rosparam param="board_configuration">
