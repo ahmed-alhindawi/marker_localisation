@@ -40,7 +40,7 @@ class ArUcoBoardNode(object):
         else:
             raise ValueError("Required ARUCO dictionary not available. Available ones are: {}".format(_allowed_dicts))
 
-        self._marker_length = rospy.get_param("~marker_length", default=0.10)
+        self._marker_size = rospy.get_param("~marker_size", default=0.10)
 
         rospy.loginfo("Waiting for camera info messages")
         self.camera = image_geometry.PinholeCameraModel()
@@ -60,7 +60,7 @@ class ArUcoBoardNode(object):
         corners, ids, rejected_img_points = aruco.detectMarkers(gray, self._dict)
 
         if ids is not None and len(ids) > 0:
-            rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, self._marker_length, self.camera.K, self.camera.D)
+            rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, self._marker_size, self.camera.K, self.camera.D)
 
             tags = []
             for i, marker_id in enumerate(ids):
@@ -91,7 +91,7 @@ class ArUcoBoardNode(object):
                 tag = MarkerTagDetection()
                 tag.id = marker_id
                 tag.corners2d = [c1, c2, c3, c4]
-                tag.tag_size = self._marker_length
+                tag.tag_size = self._marker_size
                 tag.pose = PoseStamped()
                 tag.pose.pose.position = Point(*trans)
                 tag.pose.pose.orientation = Quaternion(*quaternion)
