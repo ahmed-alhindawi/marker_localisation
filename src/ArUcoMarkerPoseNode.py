@@ -16,7 +16,7 @@ import image_geometry
 import numpy as np
 
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import Point, PoseStamped, Quaternion
+from geometry_msgs.msg import Point, Quaternion, Pose
 from marker_localisation.msg import MarkerTagDetection, MarkerTagDetectionArray
 
 
@@ -89,13 +89,12 @@ class ArUcoBoardNode(object):
                 c4.y = tag_corners[3][1]
 
                 tag = MarkerTagDetection()
-                tag.id = marker_id
+                tag.id = str(marker_id[0])
                 tag.corners2d = [c1, c2, c3, c4]
                 tag.tag_size = self._marker_size
-                tag.pose = PoseStamped()
-                tag.pose.pose.position = Point(*trans)
-                tag.pose.pose.orientation = Quaternion(*quaternion)
-                tag.pose.header = cam_img.header
+                tag.pose = Pose()
+                tag.pose.position = Point(*trans)
+                tag.pose.orientation = Quaternion(*quaternion)
 
                 tags.append(tag)
 
@@ -107,6 +106,7 @@ class ArUcoBoardNode(object):
                                                        parent=cam_img.header.frame_id)
 
             mtda = MarkerTagDetectionArray()
+            mtda.header = cam_img.header
             mtda.detections = tags
             self._marker_pub.publish(mtda)
 
