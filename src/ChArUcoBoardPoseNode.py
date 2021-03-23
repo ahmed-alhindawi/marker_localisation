@@ -2,17 +2,18 @@
 
 from __future__ import print_function
 
-import cv2
-import cv2.aruco as aruco
-import image_geometry
-import numpy as np
 import rospy
-from cv_bridge import CvBridge
-from geometry_msgs.msg import Point, PoseStamped, Quaternion
-from marker_localisation.msg import MarkerTagDetection
-from sensor_msgs.msg import Image, CameraInfo
 from tf import TransformListener, TransformBroadcaster
 from tf import transformations
+import cv2.aruco as aruco
+import cv2
+from cv_bridge import CvBridge
+import image_geometry
+import numpy as np
+
+from sensor_msgs.msg import Image, CameraInfo
+from geometry_msgs.msg import Point, PoseStamped, Quaternion
+from marker_localisation.msg import MarkerTagDetection
 
 
 class ChArUcoBoardNode(object):
@@ -21,10 +22,13 @@ class ChArUcoBoardNode(object):
         self._tf_listener = TransformListener()
         self._cv_bridge = CvBridge()
         self._publish_tf = rospy.get_param("~publish_tf", default=True)
+        self._last_rvev = None
+        self._last_tvec = None
 
         rospy.loginfo("Waiting for camera info messages")
         self.camera = image_geometry.PinholeCameraModel()
-        cam_info_msg = rospy.wait_for_message("/camera_info", CameraInfo, timeout=None)
+        cam_info_msg = rospy.wait_for_message(
+            rospy.get_param("~camera_info_topic", "/camera_info"), CameraInfo, timeout=None)
         self.camera.fromCameraInfo(cam_info_msg)
         rospy.loginfo("...Received")
 
@@ -61,7 +65,7 @@ class ChArUcoBoardNode(object):
                                                 self._board_config['marker_size'],
                                                 self._dict)
 
-        rospy.Subscriber("/image", Image, self.publish_marker_transform)
+        rospy.Subscriber(rospy.get_param("~camera_image_topic", default="/image"), Image, self.publish_marker_transform)
         self._marker_pub = rospy.Publisher("/tags", MarkerTagDetection, queue_size=10)
 
     def publish_marker_transform(self, cam_img):
@@ -73,20 +77,23 @@ class ChArUcoBoardNode(object):
         corners, ids, rejected_img_points = aruco.detectMarkers(gray, self._dict)
 
         if ids is not None and len(ids) > 0:
-            ret, ch_corners, ch_ids = aruco.interpolateCornersCharuco(corners, ids, gray, self._board)
+            ret, ch_corners, ch_ids = aruco.interpolateCornersCharuco(corners, ids, gray, self._board, self.camera.K, self.camera.D)
             # if there are enough corners to get a reasonable result
             if ret > 3:
+                use_guess = self._last_tvec is not None and self._last_rvev is not None
                 retval, rvec, tvec = aruco.estimatePoseCharucoBoard(ch_corners, ch_ids, self._board, self.camera.K,
-                                                                    self.camera.D, rvec=None, tvec=None)
+                                                                    self.camera.D, rvec=self._last_rvev, tvec=self._last_tvec, useExtrinsicGuess=use_guess)
 
                 # if a pose could be estimated
                 if retval:
+                    self._last_tvec = tvec
+                    self._last_rvev = rvec
                     angle = np.linalg.norm(rvec)
                     axis = rvec.flatten() / angle
 
                     quaternion = transformations.quaternion_about_axis(angle, axis)
 
-                    tag_corners = ch_corners.reshape(4, 2)
+                    tag_corners = ch_corners.reshape(ret, 2)
                     c1 = Point()
                     c1.x = tag_corners[0][0]
                     c1.y = tag_corners[0][1]
@@ -116,8 +123,7 @@ class ChArUcoBoardNode(object):
                     if self._publish_tf:
                         self._tf_broadcaster.sendTransform(translation=tvec,
                                                            rotation=quaternion,
-                                                           time=rospy.Time(cam_img.header.stamp.secs,
-                                                                           cam_img.header.stamp.nsecs),
+                                                           time=cam_img.header.stamp,
                                                            child=self._board_config["name"],
                                                            parent=cam_img.header.frame_id)
 
