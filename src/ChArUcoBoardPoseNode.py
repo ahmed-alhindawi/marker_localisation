@@ -68,9 +68,9 @@ class ChArUcoBoardNode(object):
         self._marker_pub = rospy.Publisher("/tags", MarkerTagDetection, queue_size=10)
 
     def publish_marker_transform(self, cam_img):
-        frame = self._cv_bridge.imgmsg_to_cv2(cam_img)
+        frame = self._cv_bridge.imgmsg_to_cv2(cam_img, desired_encoding="rgb8")
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
 
         # identify markers and
         corners, ids, rejected_img_points = aruco.detectMarkers(gray, self._dict)
@@ -81,7 +81,7 @@ class ChArUcoBoardNode(object):
             if ret > 3:
                 use_guess = self._last_tvec is not None and self._last_rvev is not None
                 retval, rvec, tvec = aruco.estimatePoseCharucoBoard(ch_corners, ch_ids, self._board, self.camera.K,
-                                                                    self.camera.D, rvec=self._last_rvev, tvec=self._last_tvec, useExtrinsicGuess=use_guess)
+                                                                    self.camera.D, rvec=self._last_rvev, tvec=self._last_tvec, useExtrinsicGuess=False)
 
                 # if a pose could be estimated
                 if retval:
